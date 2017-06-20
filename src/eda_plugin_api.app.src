@@ -1,0 +1,13 @@
+{application, eda_plugin_api,
+ [{description, "Plugin api for eda"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+  {maintainers, []},
+  {links, []}
+ ]}.
