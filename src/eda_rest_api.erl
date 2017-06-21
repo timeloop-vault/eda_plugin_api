@@ -52,7 +52,7 @@ send_channel_message(ChannelId, Message, BotName) ->
 create_message(ChannelId, Content) ->
     Path = ?RestCreateMessage(ChannelId),
     Body = #{<<"content">> => unicode:characters_to_binary(Content)},
-    {post, Path, jiffy:encode(Body)}.
+    {post, Path, jiffy:encode(Body, [force_utf8])}.
 
 %%--------------------------------------------------------------------
 %% @doc
