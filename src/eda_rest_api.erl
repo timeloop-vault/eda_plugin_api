@@ -10,9 +10,13 @@
 -author("Stefan Hagdahl").
 
 %% API
--export([send_channel_message/3,
-         create_message/2,
+-export([send_channel_message/4,
+         create_channel_message/2,
+         create_channel_message/3,
+         create_embed_object/4,
+         create_embed_fields/1,
          parse_http_headers/1]).
+
 -export_type([http_method/0]).
 
 -include("eda_rest.hrl").
@@ -32,11 +36,11 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(send_channel_message(ChannelId :: term(), Message :: string(),
+-spec(send_channel_message(HttpMethod :: http_method(), Path :: string(),
+                           Body :: iodata(),
                            BotName :: atom() | string()) ->
     {ok, Ref :: term()} | {error, Reason :: term()}).
-send_channel_message(ChannelId, Message, BotName) ->
-    {HttpMethod, Path, Body} = create_message(ChannelId, Message),
+send_channel_message(HttpMethod, Path, Body, BotName) ->
     eda_rest_path:rest_call(BotName, HttpMethod, Path, Body).
 
 %%--------------------------------------------------------------------
@@ -46,13 +50,72 @@ send_channel_message(ChannelId, Message, BotName) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(create_message(ChannelId :: term(), Content :: string()) ->
+-spec(create_channel_message(ChannelId :: term(), Content :: string()) ->
     {HttpMethod :: http_method(), Path :: string(), Body :: iodata()} |
     {error, Reason :: term()}).
-create_message(ChannelId, Content) ->
+create_channel_message(ChannelId, Content) ->
+    create_channel_message(ChannelId, Content, undefined).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Create Message
+%% https://discordapp.com/developers/docs/resources/channel#create-message
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(create_channel_message(ChannelId :: term(), Content :: string(),
+                     Embed :: map() | undefined) ->
+    {HttpMethod :: http_method(), Path :: string(), Body :: iodata()} |
+    {error, Reason :: term()}).
+create_channel_message(ChannelId, Content, Embed) ->
     Path = ?RestCreateMessage(ChannelId),
-    Body = #{<<"content">> => unicode:characters_to_binary(Content)},
+    Body =
+    case Embed of
+        undefined ->
+            #{<<"content">> => unicode:characters_to_binary(Content)};
+        Embed when is_map(Embed) ->
+            #{<<"content">> => unicode:characters_to_binary(Content),
+                <<"embed">> => Embed}
+    end,
     {post, Path, jiffy:encode(Body, [force_utf8])}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Create embed object for message
+%% https://discordapp.com/developers/docs/resources/channel#embed-object
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(create_embed_object(Title :: string(), Color :: integer(),
+                          Description :: string() | undefined,
+                          Fields :: [#{name => string(),
+                                       value => string()}])
+                         -> map()).
+create_embed_object(Title, Color, Description, Fields) ->
+    #{<<"title">> => unicode:characters_to_binary(Title),
+      <<"color">> => Color,
+      <<"description">> => unicode:characters_to_binary(Description),
+        <<"fields">> => create_embed_fields(Fields)}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Create embed fields
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(create_embed_fields(Fields :: [#{name => string(),
+                                       value => string()}]) ->
+    [#{name => bitstring(), value => bitstring()}]).
+create_embed_fields(Fields) ->
+    create_embed_fields(Fields, []).
+
+create_embed_fields([], Fields) ->
+    Fields;
+create_embed_fields([#{name := Name, value := Value}|Rest], Fields) ->
+    FieldMap = #{name => unicode:characters_to_binary(Name),
+                 value => unicode:characters_to_binary(Value)},
+    create_embed_fields(Rest, Fields ++ [FieldMap]).
+
 
 %%--------------------------------------------------------------------
 %% @doc
