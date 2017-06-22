@@ -14,6 +14,7 @@
          create_channel_message/2,
          create_channel_message/3,
          create_embed_object/4,
+         create_embed_object/5,
          create_embed_fields/1,
          parse_http_headers/1]).
 
@@ -99,6 +100,26 @@ create_embed_object(Title, Color, Description, Fields) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Create embed object for message
+%% https://discordapp.com/developers/docs/resources/channel#embed-object
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(create_embed_object(Title :: string(), Color :: integer(),
+                          Description :: string() | undefined,
+                          Fields :: [#{name => string(),
+                          value => string()}],
+                          Footer :: #{text => string()})
+                         -> map()).
+create_embed_object(Title, Color, Description, Fields, Footer) ->
+    #{<<"title">> => unicode:characters_to_binary(Title),
+      <<"color">> => Color,
+      <<"description">> => unicode:characters_to_binary(Description),
+      <<"fields">> => create_embed_fields(Fields),
+      <<"footer">> => create_embed_footer(Footer)}.
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Create embed fields
 %%
 %% @end
@@ -115,6 +136,17 @@ create_embed_fields([#{name := Name, value := Value}|Rest], Fields) ->
     FieldMap = #{name => unicode:characters_to_binary(Name),
                  value => unicode:characters_to_binary(Value)},
     create_embed_fields(Rest, Fields ++ [FieldMap]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Create embed footer
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(create_embed_footer(Footer :: #{text => string()}) ->
+                             #{text => bitstring()}).
+create_embed_footer(#{text := Text}) ->
+    #{text => unicode:characters_to_binary(Text)}.
 
 
 %%--------------------------------------------------------------------
